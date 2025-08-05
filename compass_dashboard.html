@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Boat Compass</title>
+  <style>
+    body { font-family: Arial; text-align: center; margin-top: 40px; }
+    #compass {
+      width: 200px; height: 200px;
+      border: 4px solid #333; border-radius: 50%;
+      position: relative;
+      margin: auto;
+    }
+    #needle {
+      width: 4px; height: 90px;
+      background: red;
+      position: absolute;
+      top: 10px; left: 98px;
+      transform-origin: bottom center;
+      transition: transform 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+  <h1>Boat Compass</h1>
+  <button onclick="connect()">🔗 Connect to BoatCompass</button>
+  <div id="compass">
+    <div id="needle"></div>
+  </div>
+  <h2 id="heading">Heading: --°</h2>
+
+<script>
+let headingChar;
+
+async function connect() {
+  let device = await navigator.bluetooth.requestDevice({
+    filters: [{ name: 'BoatCompass' }],
+    optionalServices: ['180c']
+  });
+  let server = await device.gatt.connect();
+  let service = await server.getPrimaryService('180c');
+  headingChar = await service.getCharacteristic('2a56');
+  headingChar.startNotifications();
+  headingChar.addEventListener('characteristicvaluechanged', e => {
+    let yaw = e.target.value.getFloat32(0, true);
+    document.getElementById('needle').style.transform = `rotate(${yaw}deg)`;
+    document.getElementById('heading').innerText = `Heading: ${yaw.toFixed(1)}°`;
+  });
+}
+</script>
+</body>
+</html>
